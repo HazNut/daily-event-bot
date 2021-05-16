@@ -1,13 +1,16 @@
 from datetime import date
 import os
 import random
+from sys import platform
 
 from dotenv import load_dotenv
 import tweepy
 import wikipediaapi
 
 # Load API keys and tokens.
-load_dotenv()
+# Load .env if not running on Heroku.
+if 'HEROKU' not in os.environ:
+    load_dotenv()
 CONSUMER_KEY = os.environ.get('CONSUMER_KEY')
 CONSUMER_SECRET = os.environ.get('CONSUMER_SECRET')
 ACCESS_TOKEN = os.environ.get('ACCESS_TOKEN')
@@ -22,9 +25,14 @@ api = tweepy.API(auth)
 wiki_wiki = wikipediaapi.Wikipedia('en')
 
 # Get the current day in a format such as 'May 1'.
-# The # is a Windows-specific way of removing the leading zero from the day.
-# May be able to use a hyphen for Linux.
-current_date = date.today().strftime('%B %#d')
+# Platform specific functionality to remove leading zeroes.
+# Only support removal for Windows and Linux so far.
+if platform == 'win32':
+    current_date = date.today().strftime('%B %#d')
+elif platform == 'linux':
+    current_date = date.today().strftime('%B %-d')
+else:
+    current_date = date.today().strftime('%B %d')
 
 # Get the Wikipedia page for the current day.
 page_py = wiki_wiki.page(current_date.replace(' ', '_'))
