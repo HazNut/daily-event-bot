@@ -39,9 +39,21 @@ page_py = wiki_wiki.page(current_date.replace(' ', '_'))
 
 # Get all events on the current day.
 events = []
-for section in page_py.sections[0].sections:
-    for event in section.text.split('\n'):
+
+# The page will have an events section, possibly with subsections for year ranges.
+events_section = page_py.sections[0]
+events_subsections = page_py.sections[0].sections
+
+# If the events section is not split into subsections, get the events directly from the events section.
+if not events_subsections:
+    for event in events_section.text.split('\n'):
         events.append(event)
+
+# If there are subsections, get events from all subsections.
+else:
+    for subsection in events_subsections:
+        for event in subsection.text.split('\n'):
+            events.append(event)
 
 # Get a random event.
 # Sometimes the year will have a leading 0 e.g. 0946 - this is removed.
