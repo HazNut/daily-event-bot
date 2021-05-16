@@ -1,1 +1,1 @@
-# daily-fact-bot
+# daily-event-bot
