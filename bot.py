@@ -16,49 +16,71 @@ CONSUMER_SECRET = os.environ.get('CONSUMER_SECRET')
 ACCESS_TOKEN = os.environ.get('ACCESS_TOKEN')
 ACCESS_SECRET = os.environ.get('ACCESS_SECRET')
 
-# Set up the connection to the API.
-auth = tweepy.OAuthHandler(CONSUMER_KEY, CONSUMER_SECRET)
-auth.set_access_token(ACCESS_TOKEN, ACCESS_SECRET)
-api = tweepy.API(auth)
 
-# Initialize the Wikipedia object.
-wiki_wiki = wikipediaapi.Wikipedia('en')
+# Get the connection to the API.
+def get_api_connection():
+    auth = tweepy.OAuthHandler(CONSUMER_KEY, CONSUMER_SECRET)
+    auth.set_access_token(ACCESS_TOKEN, ACCESS_SECRET)
+    return tweepy.API(auth)
+
 
 # Get the current day in a format such as 'May 1'.
 # Platform specific functionality to remove leading zeroes.
 # Only support removal for Windows and Linux so far.
-if platform == 'win32':
-    current_date = date.today().strftime('%B %#d')
-elif platform == 'linux':
-    current_date = date.today().strftime('%B %-d')
-else:
-    current_date = date.today().strftime('%B %d')
+def get_current_day():
+    if platform == 'win32':
+        return date.today().strftime('%B %#d')
+    elif platform == 'linux':
+        return date.today().strftime('%B %-d')
+    else:
+        return date.today().strftime('%B %d')
 
-# Get the Wikipedia page for the current day.
-page_py = wiki_wiki.page(current_date.replace(' ', '_'))
 
-# Get all events on the current day.
-events = []
+# Get all events that occurred on a given day of the year.
+def get_events_on_day(day):
+    # Initialize the Wikipedia object.
+    wiki_wiki = wikipediaapi.Wikipedia('en')
 
-# The page will have an events section, possibly with subsections for year ranges.
-events_section = page_py.sections[0]
-events_subsections = page_py.sections[0].sections
+    # Get the Wikipedia page for the current day.
+    page_py = wiki_wiki.page(day.replace(' ', '_'))
 
-# If the events section is not split into subsections, get the events directly from the events section.
-if not events_subsections:
-    for event in events_section.text.split('\n'):
-        events.append(event)
+    # Get all events on the current day.
+    events = []
 
-# If there are subsections, get events from all subsections.
-else:
-    for subsection in events_subsections:
-        for event in subsection.text.split('\n'):
+    # The page will have an events section, possibly with subsections for year ranges.
+    events_section = page_py.sections[0]
+    events_subsections = page_py.sections[0].sections
+
+    # If the events section is not split into subsections, get the events directly from the events section.
+    if not events_subsections:
+        for event in events_section.text.split('\n'):
             events.append(event)
 
-# Get a random event.
-# Sometimes the year will have a leading 0 e.g. 0946 - this is removed.
-event = random.choice(events).lstrip('0')
+    # If there are subsections, get events from all subsections.
+    else:
+        for subsection in events_subsections:
+            for event in subsection.text.split('\n'):
+                events.append(event)
 
-# Tweet the event.
-tweet = f'{current_date}, {event}'
-api.update_status(tweet)
+    return events
+
+
+# Choose a random event and tweet it.
+def tweet_random_event(day, events, api):
+    # Sometimes the year will have a leading 0 e.g. 0946 - this is removed.
+    event = random.choice(events).lstrip('0')
+
+    # Tweet the event.
+    tweet = f'{day}, {event}'
+    api.update_status(tweet)
+
+
+def main():
+    api = get_api_connection()
+    day = get_current_day()
+    events = get_events_on_day(day)
+    tweet_random_event(day, events, api)
+
+
+if __name__ == '__main__':
+    main()
